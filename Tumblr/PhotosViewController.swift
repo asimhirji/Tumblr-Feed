@@ -8,6 +8,7 @@
 
 import UIKit
 import AlamofireImage
+import AFNetworking
 
 class PhotosViewController: UIViewController,UITableViewDataSource, UITableViewDelegate {
     
@@ -54,19 +55,20 @@ class PhotosViewController: UIViewController,UITableViewDataSource, UITableViewD
         fetchPhotos()
     }
     
-    func tableView(_ PhotoTableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         return posts.count
+    }
+    
+    func tableView(_ PhotoTableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 1
     }
     
     func tableView(_ PhotoTableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = PhotoTableView.dequeueReusableCell(withIdentifier: "PhotoTableViewCell") as! PhotoTableViewCell
-        
         // Configure YourCustomCell using the outlets that you've defined.
-        let post = posts[indexPath.row]
-        print(post)
+        let post = posts[indexPath.section]
         if let photos = post["photos"] as? [[String: Any]] {
             // photos is NOT nil, we can use it!
-            // TODO: Get the photo url
             let photo = photos[0]
             let originalSize = photo["original_size"] as! [String: Any]
             let urlString = originalSize["url"] as! String
@@ -77,12 +79,61 @@ class PhotosViewController: UIViewController,UITableViewDataSource, UITableViewD
         return cell
     }
     
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 50
+    }
+    
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let headerView = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 50))
+        headerView.backgroundColor = UIColor(white: 1, alpha: 0.9)
+        
+        let profileView = UIImageView(frame: CGRect(x: 10, y: 10, width: 30, height: 30))
+        profileView.clipsToBounds = true
+        profileView.layer.cornerRadius = 15;
+        profileView.layer.borderColor = UIColor(white: 0.7, alpha: 0.8).cgColor
+        profileView.layer.borderWidth = 1;
+        
+        // Set the avatar
+        profileView.af_setImage(withURL: URL(string: "https://api.tumblr.com/v2/blog/humansofnewyork.tumblr.com/avatar")!)
+        headerView.addSubview(profileView)
+        
+        // Add a uilabel for the date
+        let post = posts[section]
+        let date = post["date"] as! String
+        let dateLabel = UILabel(frame: CGRect(x: 50, y: 10, width: 260, height: 30))
+        dateLabel.text = date
+        dateLabel.font = UIFont.boldSystemFont(ofSize: 14.0)
+        headerView.addSubview(dateLabel)
+        
+        return headerView
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
     
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        let cell = sender as! UITableViewCell
+        if let indexPath = PhotoTableView.indexPath(for: cell) {
+            let photos = posts[indexPath.section]
+            let vc = segue.destination as! PhotoDetailsViewController
+            let picutre = photos["photos"] as! [[String: Any]]
+            let photo = picutre[0]
+            let originalSize = photo["original_size"] as! [String: Any]
+            let urlString = originalSize["url"] as! String
+            let caption = photos["caption"] as! String
+            let date = photos["date"] as! String
+            vc.captionString = caption
+            vc.imageUrl = urlString
+            vc.date = date
+            
+        }
+    }
 
+    func tableView(_ PhotoTableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        PhotoTableView.deselectRow(at: indexPath, animated: true)
+    }
     /*
     // MARK: - Navigation
 
@@ -92,5 +143,7 @@ class PhotosViewController: UIViewController,UITableViewDataSource, UITableViewD
         // Pass the selected object to the new view controller.
     }
     */
+
+
 
 }
